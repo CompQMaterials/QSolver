@@ -46,15 +46,34 @@ struct EigenStateG
         state.load(in, arma::arma_binary);
         return true;
     }
-    template<int L>
-    void Print(const FockBasis<L> &b,double tol=1e-3) const
+
+    void PrintToFile(const FockBasis &b, std::ofstream &out,double tol=1e-3) const
     {
+
         uvec id=sort_index(abs(state),"descend");
+
+        out<<"Energy:"<<ener<<endl;
+        out<<"State  Probability Coeff"<<endl;
         for(size_t i=0;i<state.size();i++)
             if(fabs(state(id(i)))>tol)
             {
                 auto p=id(i);
-                cout<<b.vec[p]<<" "<< fabs(state(p))<<" "<<state(p)<<endl;
+                out<<b.vec[p]<<" "<< pow(fabs(state(p)),2)<<" "<<state(p)<<endl;
+            }
+    }
+
+    void Print(const FockBasis &b,double tol=1e-3) const
+    {
+
+        uvec id=sort_index(abs(state),"descend");
+        cout<<std::setprecision(10);
+        cout<<"Energy:"<<ener<<endl;
+        cout<<"State  Probability Coeff"<<endl;
+        for(size_t i=0;i<state.size();i++)
+            if(fabs(state(id(i)))>tol)
+            {
+                auto p=id(i);
+                cout<<b.vec[p]<<" "<< pow(fabs(state(p)),2)<<" "<<state(p)<<endl;
             }
     }
 };
@@ -67,11 +86,11 @@ bool operator<(const EigenStateG<scalar>& e1,const EigenStateG<scalar>& e2)
 
 using EigenState=EigenStateG<>;
 
-template<int L>
-EigenState FindGS(QOperator ham,FockBasisFixedChargeG<L>& b,
-                  const SymmetryGroup<L,double>& G, int nPart)
+
+inline EigenState FindGS(QOperator ham,FockBasisFixedChargeG& b,
+                  const SymmetryGroup<double>& G, int nPart)
 {
-    auto H=ham.template toMatrix<L>(b,G);
+    auto H=ham.template toMatrix(b,G);
     cout<<"matrix nonzero="<<H.n_nonzero<<endl; cout.flush();
 
     vec eval;
@@ -81,9 +100,9 @@ EigenState FindGS(QOperator ham,FockBasisFixedChargeG<L>& b,
     else
         eig_sym(eval,evec,mat(H));
     uvec ind = sort_index(eval);
-//    for(uint i=0;i<eval.size();i++)
-//        if (eval(i)-eval(ind(0))<1e-10)
-//            cout<<eval[i]<<"\n";
+    //    for(uint i=0;i<eval.size();i++)
+    //        if (eval(i)-eval(ind(0))<1e-10)
+    //            cout<<eval[i]<<"\n";
     std::vector<double> unique_eval={ eval(ind(0)) };
     for(uint i=0;i<eval.size();i++)
     {
@@ -96,19 +115,19 @@ EigenState FindGS(QOperator ham,FockBasisFixedChargeG<L>& b,
     cout<<"dim="<<b.Size()<<" nPart="<<nPart<<" sym="<<b.sym<<" ener="<<eval(ind(0))<<endl;
     return {eval(ind(0)),evec.col(ind(0)),nPart,b.sym};
 
-//    Col<double> wf(b.Size());
-//    wf.randu();
-//    auto sol=Diagonalize<double>(H,wf);
-//    cout<<sol.cIter<<" lanczos iter; "<<"nPart="<<nPart<<" sym="<<b.sym<<" ener="<<sol.ener0<<endl;
-//    return {sol.ener0,sol.x0,nPart,b.sym};
+    //    Col<double> wf(b.Size());
+    //    wf.randu();
+    //    auto sol=Diagonalize<double>(H,wf);
+    //    cout<<sol.cIter<<" lanczos iter; "<<"nPart="<<nPart<<" sym="<<b.sym<<" ener="<<sol.ener0<<endl;
+    //    return {sol.ener0,sol.x0,nPart,b.sym};
 }
 
-template<int L>
-EigenStateG<cmpx> FindGS(QOperatorG<cmpx> ham,FockBasisFixedChargeG<L>& b,
-                  const SymmetryGroup<L,cmpx>& G, int nPart)
+
+inline EigenStateG<cmpx> FindGS(QOperatorG<cmpx> ham,FockBasisFixedChargeG& b,
+                         const SymmetryGroup<cmpx>& G, int nPart)
 {
     //        b.SetSym(G,sym);
-    auto H=ham.toMatrix<L,cmpx>(b,G);
+    auto H=ham.toMatrix<cmpx>(b,G);
     cout<<"matrix nonzero="<<H.n_nonzero<<endl; cout.flush();
 
     cx_vec evalz;
@@ -122,9 +141,9 @@ EigenStateG<cmpx> FindGS(QOperatorG<cmpx> ham,FockBasisFixedChargeG<L>& b,
     else
         eig_sym(eval,evec,cx_mat(H));
     uvec ind = sort_index(eval);
-//    for(uint i=0;i<eval.size();i++)
-//        if (eval(i)-eval(ind(0))<1e-10)
-//            cout<<eval[i]<<"\n";
+    //    for(uint i=0;i<eval.size();i++)
+    //        if (eval(i)-eval(ind(0))<1e-10)
+    //            cout<<eval[i]<<"\n";
     std::vector<double> unique_eval={ eval(ind(0)) };
     for(uint i=0;i<eval.size();i++)
     {
@@ -137,20 +156,20 @@ EigenStateG<cmpx> FindGS(QOperatorG<cmpx> ham,FockBasisFixedChargeG<L>& b,
     cout<<"dim="<<b.Size()<<" nPart="<<nPart<<" sym="<<b.sym<<" ener="<<eval(ind(0))<<endl;
     return {eval(ind(0)),evec.col(ind(0)),nPart,b.sym};
 
-//    Col<cmpx> wf(b.Size());
-//    wf.randu();
-//    auto sol=Diagonalize<cmpx>(H,wf);
-//    cout<<sol.cIter<<" lanczos iter; "<<"nPart="<<nPart<<" sym="<<b.sym<<" ener="<<sol.ener0<<endl;
-//    return {sol.ener0,sol.x0,nPart,b.sym};
+    //    Col<cmpx> wf(b.Size());
+    //    wf.randu();
+    //    auto sol=Diagonalize<cmpx>(H,wf);
+    //    cout<<sol.cIter<<" lanczos iter; "<<"nPart="<<nPart<<" sym="<<b.sym<<" ener="<<sol.ener0<<endl;
+    //    return {sol.ener0,sol.x0,nPart,b.sym};
 }
 
 
-template<int L>
-EigenStateG<cmpx> FindGS(QOperator ham,FockBasisFixedChargeG<L>& b,
-                         const SymmetryGroup<L,cmpx>& G, int nPart)
+
+inline EigenStateG<cmpx> FindGS(QOperator ham,FockBasisFixedChargeG& b,
+                         const SymmetryGroup<cmpx>& G, int nPart)
 {
     //        b.SetSym(G,sym);
-    auto H=ham.toMatrix<L,cmpx>(b,G);
+    auto H=ham.toMatrix<cmpx>(b,G);
     cout<<"matrix nonzero="<<H.n_nonzero<<endl; cout.flush();
 
     cx_vec evalz;
@@ -164,9 +183,9 @@ EigenStateG<cmpx> FindGS(QOperator ham,FockBasisFixedChargeG<L>& b,
     else
         eig_sym(eval,evec,cx_mat(H));
     uvec ind = sort_index(eval);
-//    for(uint i=0;i<eval.size();i++)
-//        if (eval(i)-eval(ind(0))<1e-10)
-//            cout<<eval[i]<<"\n";
+    //    for(uint i=0;i<eval.size();i++)
+    //        if (eval(i)-eval(ind(0))<1e-10)
+    //            cout<<eval[i]<<"\n";
     std::vector<double> unique_eval={ eval(ind(0)) };
     for(uint i=0;i<eval.size();i++)
     {
@@ -179,48 +198,48 @@ EigenStateG<cmpx> FindGS(QOperator ham,FockBasisFixedChargeG<L>& b,
     cout<<"dim="<<b.Size()<<" nPart="<<nPart<<" sym="<<b.sym<<" ener="<<eval(ind(0))<<endl;
     return {eval(ind(0)),evec.col(ind(0)),nPart,b.sym};
 
-//    Col<cmpx> wf(b.Size());
-//    wf.randu();
-//    auto sol=Diagonalize<cmpx>(H,wf);
-//    cout<<sol.cIter<<" lanczos iter; "<<"nPart="<<nPart<<" sym="<<b.sym<<" ener="<<sol.ener0<<endl;
-//    return {sol.ener0,sol.x0,nPart,b.sym};
+    //    Col<cmpx> wf(b.Size());
+    //    wf.randu();
+    //    auto sol=Diagonalize<cmpx>(H,wf);
+    //    cout<<sol.cIter<<" lanczos iter; "<<"nPart="<<nPart<<" sym="<<b.sym<<" ener="<<sol.ener0<<endl;
+    //    return {sol.ener0,sol.x0,nPart,b.sym};
 }
 
 
-template<int L>
-EigenState FindGS(QOperator ham,FockBasisFixedCharge<L>& b,int nPart)
+
+inline EigenState FindGS(QOperator ham,FockBasisFixedCharge& b,int nPart, int nstates = 101)
 {
-    auto H=ham.toMatrix<L>(b);
+    auto H=ham.toMatrix(b);
     cout<<"matrix nonzero="<<H.n_nonzero<<endl; cout.flush();
 
     vec eval;
     mat evec;
-    if(b.Size()>10) {
-        eigs_sym(eval,evec,H ,std::min(b.Size()-2,21),"sa");
-    }
+    if(b.Size()>10)
+        eigs_sym(eval,evec, H,std::min(b.Size()-1,nstates),"sa");
     else
         eig_sym(eval,evec,mat(H));
     uvec ind = sort_index(eval);
-//    for(uint i=0;i<eval.size();i++)
-//        if (eval(i)-eval(ind(0))<1e-10)
-//            cout<<eval[i]<<"\n";
+
+    //    for(uint i=0;i<eval.size();i++)
+    //        if (eval(i)-eval(ind(0))<1e-10)
+    //            cout<<eval[i]<<"\n";
     std::vector<double> unique_eval={ eval(ind(0)) };
     for(uint i=0;i<eval.size();i++)
     {
         const auto x=eval(ind(i));
         if (x-unique_eval.back()>1e-10)
             unique_eval.push_back(x);
-        if (unique_eval.size()>2) break; // only print the first 2 different evals
-        cout<<x<<"\n";
+//        if (unique_eval.size()>10) break; // only print the first 2 different evals
+//        cout<<x/*-eval(ind(0))*/<<"\n";
     }
     cout<<"dim="<<b.Size()<<" nPart="<<nPart<<" sym="<<b.sym<<" ener="<<eval(ind(0))<<endl;
     return {eval(ind(0)),evec.col(ind(0)),nPart,b.sym};
 
-//    Col<double> wf(b.Size());
-//    wf.randu();
-//    auto sol=Diagonalize<double>(H,wf);
-//    cout<<sol.cIter<<" lanczos iter; "<<"nPart="<<nPart<<" sym="<<b.sym<<" ener="<<sol.ener0<<endl;
-//    return {sol.ener0,sol.x0,nPart,b.sym};
+    //    Col<double> wf(b.Size());
+    //    wf.randu();
+    //    auto sol=Diagonalize<double>(H,wf);
+    //    cout<<sol.cIter<<" lanczos iter; "<<"nPart="<<nPart<<" sym="<<b.sym<<" ener="<<sol.ener0<<endl;
+    //    return {sol.ener0,sol.x0,nPart,b.sym};
 }
 
 
@@ -234,6 +253,7 @@ struct TimeEvolution
     cx_mat evec;
     vec eval;
     cx_vec psi0_n; //to calculate <n|psi0>
+
     TimeEvolution(const sp_cx_mat &H, const cx_vec &psi0)
         :psi0_n(psi0.size())
     {
